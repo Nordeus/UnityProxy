@@ -16,7 +16,18 @@ namespace UnityProxy
 		{
 			string unityPath, artifactsPath;
 			int startingArgumentIndex = ParseArguments(args, out unityPath, out artifactsPath);
+
 			string logPath = Path.GetTempFileName();
+			bool hasLogFileArgument = false;
+			for (int i = startingArgumentIndex; i < args.Length; i++)
+			{
+				if (args[i] == "-logFile")
+				{
+					logPath = args[i + 1];
+					hasLogFileArgument = true;
+					break;
+				}
+			}
 
 			Watcher watcher = new Watcher(logPath);
 			Thread watcherThread = new Thread(watcher.Run);
@@ -25,7 +36,10 @@ namespace UnityProxy
 			Process unity = new Process();
 			unity.StartInfo = new ProcessStartInfo(unityPath);
 
-			unity.StartInfo.Arguments = "-logFile \"" + logPath + "\"";
+			if (!hasLogFileArgument)
+			{
+				unity.StartInfo.Arguments = "-logFile \"" + logPath + "\"";
+			}
 
 			for (int i = startingArgumentIndex; i < args.Length; i++)
 			{
