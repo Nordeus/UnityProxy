@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace UnityProxy
@@ -61,15 +62,24 @@ namespace UnityProxy
 				SaveArtifacts(artifactsPath, watcher.FullLog);
 			}
 
-			if (watcher.FullLog.Contains(SuccessMagicString))
+			bool isBuilding = args.Contains("-executeMethod");
+			if (isBuilding)
 			{
-				Console.WriteLine("Success.");
-				Environment.Exit(0);
+				if (watcher.FullLog.Contains(SuccessMagicString))
+				{
+					Console.WriteLine("Success.");
+					Environment.Exit(0);
+				}
+				else
+				{
+					Console.WriteLine("Failure.");
+					Environment.Exit(1);
+				}
 			}
 			else
 			{
-				Console.WriteLine("Failure.");
-				Environment.Exit(1);
+				// just reimporting, not building
+				Environment.Exit(unity.ExitCode);
 			}
 		}
 
