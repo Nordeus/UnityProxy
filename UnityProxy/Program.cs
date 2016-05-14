@@ -26,6 +26,10 @@ namespace UnityProxy
 				{
 					logPath = args[i + 1];
 					hasLogFileArgument = true;
+					if (File.Exists(logPath))
+					{
+						File.Delete(logPath);
+					}
 					break;
 				}
 			}
