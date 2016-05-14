@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace UnityProxy
@@ -16,7 +17,22 @@ namespace UnityProxy
 		{
 			string unityPath, artifactsPath;
 			int startingArgumentIndex = ParseArguments(args, out unityPath, out artifactsPath);
+
 			string logPath = Path.GetTempFileName();
+			bool hasLogFileArgument = false;
+			for (int i = startingArgumentIndex; i < args.Length; i++)
+			{
+				if (args[i] == "-logFile")
+				{
+					logPath = args[i + 1];
+					hasLogFileArgument = true;
+					if (File.Exists(logPath))
+					{
+						File.Delete(logPath);
+					}
+					break;
+				}
+			}
 
 			Watcher watcher = new Watcher(logPath);
 			Thread watcherThread = new Thread(watcher.Run);
@@ -25,7 +41,10 @@ namespace UnityProxy
 			Process unity = new Process();
 			unity.StartInfo = new ProcessStartInfo(unityPath);
 
-			unity.StartInfo.Arguments = "-logFile \"" + logPath + "\"";
+			if (!hasLogFileArgument)
+			{
+				unity.StartInfo.Arguments = "-logFile \"" + logPath + "\"";
+			}
 
 			for (int i = startingArgumentIndex; i < args.Length; i++)
 			{
@@ -47,15 +66,24 @@ namespace UnityProxy
 				SaveArtifacts(artifactsPath, watcher.FullLog);
 			}
 
-			if (watcher.FullLog.Contains(SuccessMagicString))
+			bool isBuilding = args.Contains("-executeMethod");
+			if (isBuilding)
 			{
-				Console.WriteLine("Success.");
-				Environment.Exit(0);
+				if (watcher.FullLog.Contains(SuccessMagicString))
+				{
+					Console.WriteLine("Success.");
+					Environment.Exit(0);
+				}
+				else
+				{
+					Console.WriteLine("Failure.");
+					Environment.Exit(1);
+				}
 			}
 			else
 			{
-				Console.WriteLine("Failure.");
-				Environment.Exit(1);
+				// just reimporting, not building
+				Environment.Exit(unity.ExitCode);
 			}
 		}
 
